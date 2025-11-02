@@ -1,0 +1,17 @@
+name: hydro-sync
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - jupyter
+  - pytest
+  - pip
+  - tqdm 
+  - black
+  - pip:
+    - notebook
