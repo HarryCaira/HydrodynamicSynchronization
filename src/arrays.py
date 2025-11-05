@@ -22,7 +22,7 @@ class ParticleArray2DInterface(ABC):
 
     @classmethod
     @abstractmethod
-    def create(cls, nx: int, ny: int, constants: GlobalConstants) -> "ParticleArray2DInterface": ...
+    def create(cls, nx: int, ny: int, constants: GlobalConstants, random_seed: Optional[int] = None) -> "ParticleArray2DInterface": ...
 
 
 class ParticleArray2D(ParticleArray2DInterface):
@@ -42,9 +42,7 @@ class ParticleArray2D(ParticleArray2DInterface):
         return self._orbit_centers
 
     @classmethod
-    def create(
-        cls, nx: int, ny: int, constants: GlobalConstants, random_seed: Optional[int] = None
-    ) -> "ParticleArray2D":
+    def create(cls, nx: int, ny: int, constants: GlobalConstants, random_seed: Optional[int] = None) -> "ParticleArray2D":
         """Create a 2D array of particles in a grid formation"""
         orbit_centers = []
         positions = []
@@ -57,9 +55,7 @@ class ParticleArray2D(ParticleArray2DInterface):
 
         for i in range(nx):
             for j in range(ny):
-                orbit_center = np.array(
-                    [i * constants.orbit_separation, j * constants.orbit_separation, 0.0]
-                )
+                orbit_center = np.array([i * constants.orbit_separation, j * constants.orbit_separation, 0.0])
                 orbit_centers.append(orbit_center)
                 phi = phases[i * ny + j]
 

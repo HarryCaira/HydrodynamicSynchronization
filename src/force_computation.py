@@ -33,12 +33,8 @@ class TangentialDrivingForce(ForceComputationInterface):
         angles = np.arctan2(displacements[1, :], displacements[0, :])
 
         forces = np.zeros_like(positions)
-        forces[0, :] = (
-            self._force_strength * np.sin(angles) * (1 + self._modulation_weight * np.cos(angles))
-        )
-        forces[1, :] = (
-            -self._force_strength * np.cos(angles) * (1 + self._modulation_weight * np.cos(angles))
-        )
+        forces[0, :] = self._force_strength * np.sin(angles) * (1 + self._modulation_weight * np.cos(angles))
+        forces[1, :] = -self._force_strength * np.cos(angles) * (1 + self._modulation_weight * np.cos(angles))
         return forces
 
     @classmethod

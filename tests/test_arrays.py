@@ -1,13 +1,14 @@
 import numpy as np
-
-from src.arrays import ParticleArray2D
+from typing import Optional
+from src.arrays import ParticleArray2D, ParticleArray2DInterface
 from src.constants import GlobalConstants
+
 
 class TestParticleArray2D:
     def test__create__arrays_are_correct_shapes(self) -> None:
         nx = 13
         ny = 27
-        constants = GlobalConstants()
+        constants = GlobalConstants.create()
         particle_array = ParticleArray2D.create(nx, ny, constants)
 
         assert particle_array.orbit_centers.shape == (3, nx * ny)
@@ -16,16 +17,11 @@ class TestParticleArray2D:
     def test__create__arrays_contain_correct_data(self) -> None:
         nx = ny = 2
         r = 0.5
-        constants = GlobalConstants(orbit_radius=r, orbit_separation=3*r)
+        constants = GlobalConstants.create(orbit_radius=r, orbit_separation=3 * r)
         particle_array = ParticleArray2D.create(nx, ny, constants)
 
-        expected_orbit_centers = np.array(
-            [[0.0, 0.0, 0.0], [0.0, 1.5, 0.0], [1.5, 0.0, 0.0], [1.5, 1.5, 0.0]]
-        ).T
-        expected_positions = (
-            expected_orbit_centers
-            + np.array([[r, 0.0, 0.0], [r, 0.0, 0.0], [r, 0.0, 0.0], [r, 0.0, 0.0]]).T
-        )
+        expected_orbit_centers = np.array([[0.0, 0.0, 0.0], [0.0, 1.5, 0.0], [1.5, 0.0, 0.0], [1.5, 1.5, 0.0]]).T
+        expected_positions = expected_orbit_centers + np.array([[r, 0.0, 0.0], [r, 0.0, 0.0], [r, 0.0, 0.0], [r, 0.0, 0.0]]).T
 
         np.testing.assert_array_almost_equal(particle_array.orbit_centers, expected_orbit_centers)
         np.testing.assert_array_almost_equal(particle_array.positions, expected_positions)

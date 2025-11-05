@@ -4,9 +4,18 @@ from src.constants import GlobalConstants
 from src.force_computation import TangentialDrivingForce, RadialRestoringForce
 
 
+class MockForcesAreOne(TangentialDrivingForce):
+    def compute_forces(self, positions: np.ndarray, orbit_centers: np.ndarray) -> np.ndarray:
+        return np.ones_like(positions)
+
+    @classmethod
+    def create(cls, constants: GlobalConstants) -> "MockForcesAreOne":
+        return cls(force_strength=1.0, modulation_weight=0.0)
+
+
 class TestTangentialDrivingForce:
     def test__create(self) -> None:
-        constants = GlobalConstants()
+        constants = GlobalConstants.create()
         driving_force = TangentialDrivingForce.create(constants)
         assert isinstance(driving_force, TangentialDrivingForce)
 
@@ -34,7 +43,7 @@ class TestTangentialDrivingForce:
 
 class TestRadialRestoringForce:
     def test__create(self) -> None:
-        constants = GlobalConstants()
+        constants = GlobalConstants.create()
         restoring_force = RadialRestoringForce(constants, radius=1.0)
         assert isinstance(restoring_force, RadialRestoringForce)
 
