@@ -12,6 +12,6 @@ dependencies:
   - pytest
   - pip
   - tqdm 
-  - black
+  - ruff
   - pip:
     - notebook
