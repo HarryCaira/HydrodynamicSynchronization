@@ -1,7 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
-from src.constants import GlobalConstants
+from src.hydrosync.constants import GlobalConstants
 
 
 class FluidDynamicsTensorInterface(ABC):

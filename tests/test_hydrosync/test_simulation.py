@@ -1,11 +1,10 @@
 import numpy as np
-from src.constants import GlobalConstants
-from src.arrays import ParticleArray2D
+from src.hydrosync.constants import GlobalConstants
+from src.hydrosync.arrays import GridArray
+from src.hydrosync.simulation import Simulation, SimulationLog
 
-from src.simulation import Simulation, SimulationLog
-
-from tests.test_fluid_dynamics_tensors import MockOnesTensor
-from tests.test_displacement_computation import MockDisplaceParticlesByOne
+from tests.test_hydrosync.test_fluid_dynamics_tensors import MockOnesTensor
+from tests.test_hydrosync.test_displacement_computation import MockDisplaceParticlesByOne
 
 
 class TestSimulationLog:
@@ -33,14 +32,14 @@ class TestSimulation:
         mock_tensor = MockOnesTensor.create(constants)
         mock_displacements = MockDisplaceParticlesByOne.create(constants, mock_tensor, [])
 
-        particle_array = ParticleArray2D.create(nx=2, ny=2, constants=constants)
+        particle_array = GridArray.create(nx=2, ny=2, constants=constants)
 
         simulation = Simulation.create(constants, particle_array, [mock_displacements])
         assert isinstance(simulation, Simulation)
 
     def test__run__no_displacements(self) -> None:
         constants = GlobalConstants.create(simulation_steps=10)
-        particle_array = ParticleArray2D.create(nx=2, ny=2, constants=constants)
+        particle_array = GridArray.create(nx=2, ny=2, constants=constants)
 
         simulation = Simulation.create(constants, particle_array, [])
 
@@ -56,7 +55,7 @@ class TestSimulation:
         mock_tensor = MockOnesTensor.create(constants)
         mock_displacement = MockDisplaceParticlesByOne.create(constants, mock_tensor, [])
 
-        particle_array = ParticleArray2D.create(nx=2, ny=2, constants=constants)
+        particle_array = GridArray.create(nx=2, ny=2, constants=constants)
 
         simulation = Simulation.create(constants, particle_array, [mock_displacement])
 

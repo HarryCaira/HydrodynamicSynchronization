@@ -1,8 +1,8 @@
 import numpy as np
 
-from src.fluid_dynamics_tensors import OseenTensor
-from src.constants import GlobalConstants
-from src.fluid_dynamics_tensors import FluidDynamicsTensorInterface
+from src.hydrosync.fluid_dynamics_tensors import OseenTensor
+from src.hydrosync.constants import GlobalConstants
+from src.hydrosync.fluid_dynamics_tensors import FluidDynamicsTensorInterface
 
 
 class MockOnesTensor(FluidDynamicsTensorInterface):

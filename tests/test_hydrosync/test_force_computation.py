@@ -1,7 +1,7 @@
 import numpy as np
 
-from src.constants import GlobalConstants
-from src.force_computation import TangentialDrivingForce, RadialRestoringForce
+from src.hydrosync.constants import GlobalConstants
+from src.hydrosync.force_computation import TangentialDrivingForce, RadialRestoringForce
 
 
 class MockForcesAreOne(TangentialDrivingForce):
