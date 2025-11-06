@@ -25,7 +25,7 @@ class OseenTensor(FluidDynamicsTensorInterface):
 
     def _self_mobility(self) -> np.ndarray:
         """Calculate self-mobility tensor (diagonal elements)"""
-        mobility = self._prefactor / (6 * np.pi * self._constants.eta * self._constants.a)
+        mobility: float = self._prefactor / (6 * np.pi * self._constants.eta * self._constants.a)
         return mobility * np.identity(3)
 
     def _cross_mobility(self, r_ij: np.ndarray) -> np.ndarray:
@@ -34,12 +34,13 @@ class OseenTensor(FluidDynamicsTensorInterface):
         Args:
             r_ij: Vector between particles i and j
         """
-        r = np.linalg.norm(r_ij)
+        r: float = float(np.linalg.norm(r_ij))
         if r < 2 * self._constants.a:  # Prevent overlap
             r = 2 * self._constants.a
 
-        prefactor = self._prefactor / (8 * np.pi * self._constants.eta * r)
-        r_hat = r_ij / r
+        prefactor: float = self._prefactor / (8 * np.pi * self._constants.eta * r)
+        r_hat: np.ndarray = r_ij / r
+
         return prefactor * (np.identity(3) + np.outer(r_hat, r_hat))
 
     def compute_tensor(self, positions: np.ndarray) -> np.ndarray:

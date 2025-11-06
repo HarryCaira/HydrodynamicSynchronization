@@ -8,20 +8,6 @@ from src.hydrosync.arrays import ParticleArray2DInterface
 from src.hydrosync.displacement_computation import ParticleDisplacementInterface
 
 
-class SimulationInterface(ABC):
-    @abstractmethod
-    def run(self) -> None: ...
-
-    @classmethod
-    @abstractmethod
-    def create(
-        cls,
-        constants: GlobalConstants,
-        particle_array: ParticleArray2DInterface,
-        displacements: ParticleDisplacementInterface,
-    ) -> "SimulationInterface": ...
-
-
 @dataclass
 class SimulationLog:
     orbit_centers: np.ndarray
@@ -42,6 +28,20 @@ class SimulationLog:
             r = np.abs(np.sum(np.exp(1j * angles))) / n_particles
             strengths.append(r)
         return strengths
+
+
+class SimulationInterface(ABC):
+    @abstractmethod
+    def run(self) -> SimulationLog: ...
+
+    @classmethod
+    @abstractmethod
+    def create(
+        cls,
+        constants: GlobalConstants,
+        particle_array: ParticleArray2DInterface,
+        displacements: list[ParticleDisplacementInterface],
+    ) -> "SimulationInterface": ...
 
 
 class Simulation(SimulationInterface):
@@ -66,9 +66,9 @@ class Simulation(SimulationInterface):
         self._log.add_positions(self._particles.positions)
         total_steps = self._constants.simulation_steps
 
-        total_displacements = np.zeros_like(self._particles.positions)
+        total_displacements: np.ndarray = np.zeros_like(self._particles.positions)
 
-        for i in tqdm(range(total_steps), desc="Simulating"):
+        for _ in tqdm(range(total_steps), desc="Simulating"):
             total_displacements.fill(0)
 
             for displacement in self._displacements:

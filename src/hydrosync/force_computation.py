@@ -62,7 +62,7 @@ class RadialRestoringForce(ForceComputationInterface):
         norms = np.linalg.norm(displacements, axis=0)
         radial_unit_vectors = displacements / norms
         extensions = displacements - (radial_unit_vectors * self._orbit_radius)
-        forces = -self._spring_constant * extensions
+        forces: np.ndarray = -self._spring_constant * extensions
         return forces
 
     @classmethod

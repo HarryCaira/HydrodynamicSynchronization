@@ -7,18 +7,18 @@ from src.hydrosync.constants import GlobalConstants
 
 class ParticleArray2DInterface(ABC):
     @abstractmethod
-    def __init__(self, orbit_centers: np.array, positions: np.array) -> None: ...
+    def __init__(self, orbit_centers: np.ndarray, positions: np.ndarray) -> None: ...
 
     @abstractmethod
-    def update_positions(self, new_positions: np.array) -> None: ...
-
-    @property
-    @abstractmethod
-    def positions(self) -> np.array: ...
+    def update_positions(self, new_positions: np.ndarray) -> None: ...
 
     @property
     @abstractmethod
-    def orbit_centers(self) -> np.array: ...
+    def positions(self) -> np.ndarray: ...
+
+    @property
+    @abstractmethod
+    def orbit_centers(self) -> np.ndarray: ...
 
     @classmethod
     @abstractmethod
@@ -33,26 +33,26 @@ class GridArray(ParticleArray2DInterface):
         positions: Array of shape (3, n) containing the current positions of the particles
     """
 
-    def __init__(self, orbit_centers: np.array, positions: np.array) -> None:
+    def __init__(self, orbit_centers: np.ndarray, positions: np.ndarray) -> None:
         self._orbit_centers = orbit_centers
         self._positions = positions
 
-    def update_positions(self, new_positions: np.array) -> None:
+    def update_positions(self, new_positions: np.ndarray) -> None:
         self._positions = new_positions
 
     @property
-    def positions(self) -> np.array:
+    def positions(self) -> np.ndarray:
         return self._positions
 
     @property
-    def orbit_centers(self) -> np.array:
+    def orbit_centers(self) -> np.ndarray:
         return self._orbit_centers
 
     @classmethod
     def create(cls, nx: int, ny: int, constants: GlobalConstants, random_start_seed: Optional[int] = None) -> "GridArray":
         orbit_centers = []
         positions = []
-        phases = []
+        phases = np.array([])
 
         if random_start_seed is not None:
             phases = np.random.uniform(0, 2 * np.pi, size=nx * ny)
@@ -86,26 +86,26 @@ class HoneycombArray(ParticleArray2DInterface):
         positions: Array of shape (3, n) containing the current positions of the particles
     """
 
-    def __init__(self, orbit_centers: np.array, positions: np.array) -> None:
+    def __init__(self, orbit_centers: np.ndarray, positions: np.ndarray) -> None:
         self._orbit_centers = orbit_centers
         self._positions = positions
 
-    def update_positions(self, new_positions: np.array) -> None:
+    def update_positions(self, new_positions: np.ndarray) -> None:
         self._positions = new_positions
 
     @property
-    def positions(self) -> np.array:
+    def positions(self) -> np.ndarray:
         return self._positions
 
     @property
-    def orbit_centers(self) -> np.array:
+    def orbit_centers(self) -> np.ndarray:
         return self._orbit_centers
 
     @classmethod
     def create(cls, nx: int, ny: int, constants: GlobalConstants, random_start_seed: Optional[int] = None) -> "HoneycombArray":
         orbit_centers = []
         positions = []
-        phases = []
+        phases = np.array([])
 
         if random_start_seed is not None:
             phases = np.random.uniform(0, 2 * np.pi, size=nx * ny)
