@@ -45,6 +45,7 @@ class TestGridArray:
 
         np.testing.assert_array_equal(array.orbit_centers, orbit_centers)
 
+
 class TestHoneycombArray:
     def test__create__arrays_are_correct_shapes(self) -> None:
         nx = 4
@@ -65,7 +66,7 @@ class TestHoneycombArray:
             [
                 [0.0, 0.0, 0.0],
                 [0.75, 1.299038, 0.0],
-                [ 1.5, 0.0, 0.0],
+                [1.5, 0.0, 0.0],
                 [2.25, 1.299038, 0.0],
             ]
         ).T
@@ -94,4 +95,3 @@ class TestHoneycombArray:
         array = HoneycombArray(orbit_centers=orbit_centers, positions=np.zeros((3, 2)))
 
         np.testing.assert_array_equal(array.orbit_centers, orbit_centers)
-    
