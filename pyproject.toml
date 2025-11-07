@@ -1,2 +1,19 @@
+[project]
+name = "hydro-sync"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.3.0",
+    "matplotlib>=3.10.7",
+    "numpy>=2.3.4",
+    "plotly>=6.4.0",
+    "pytest>=8.4.2",
+    "ruff>=0.14.4",
+    "streamlit>=1.51.0",
+    "tqdm>=4.67.1",
+]
+
 [tool.ruff]
 line-length=190
