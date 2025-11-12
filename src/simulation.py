@@ -3,9 +3,9 @@ import numpy as np
 from tqdm import tqdm
 from dataclasses import dataclass
 
-from src.hydrosync.constants import GlobalConstants
-from src.hydrosync.arrays import ParticleArray2DInterface
-from src.hydrosync.displacement_computation import ParticleDisplacementInterface
+from src.constants import GlobalConstants
+from src.arrays import ParticleArray2DInterface
+from src.displacement_computation import ParticleDisplacementInterface
 
 
 @dataclass
@@ -80,5 +80,15 @@ class Simulation(SimulationInterface):
         return self._log
 
     @classmethod
-    def create(cls, constants: GlobalConstants, particle_array: ParticleArray2DInterface, hydrodynamic_displacements: list[ParticleDisplacementInterface]) -> "Simulation":
-        return cls(constants=constants, particle_array=particle_array, hydrodynamic_displacements=hydrodynamic_displacements, simulation_log=SimulationLog(particle_array.orbit_centers, []))
+    def create(
+        cls,
+        constants: GlobalConstants,
+        particle_array: ParticleArray2DInterface,
+        hydrodynamic_displacements: list[ParticleDisplacementInterface],
+    ) -> "Simulation":
+        return cls(
+            constants=constants,
+            particle_array=particle_array,
+            hydrodynamic_displacements=hydrodynamic_displacements,
+            simulation_log=SimulationLog(particle_array.orbit_centers, []),
+        )

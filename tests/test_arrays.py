@@ -1,6 +1,6 @@
 import numpy as np
-from src.hydrosync.arrays import GridArray, HoneycombArray
-from src.hydrosync.constants import GlobalConstants
+from src.arrays import GridArray, HoneycombArray
+from src.constants import GlobalConstants
 
 
 class TestGridArray:

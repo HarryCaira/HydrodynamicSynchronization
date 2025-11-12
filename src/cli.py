@@ -1,24 +1,85 @@
 import click
-from src.hydrosync.constants import GlobalConstants
-from src.hydrosync.arrays import GridArray, HoneycombArray, ParticleArray2DInterface
-from src.hydrosync.fluid_dynamics_tensors import OseenTensor, FluidDynamicsTensorInterface
-from src.hydrosync.displacement_computation import HydrodynamicDisplacement, BrownianDisplacement
-from src.hydrosync.force_computation import TangentialDrivingForce, RadialRestoringForce
+from src.constants import GlobalConstants
+from src.arrays import GridArray, HoneycombArray, ParticleArray2DInterface
+from src.fluid_dynamics_tensors import (
+    OseenTensor,
+    FluidDynamicsTensorInterface,
+)
+from src.displacement_computation import (
+    HydrodynamicDisplacement,
+    BrownianDisplacement,
+)
+from src.force_computation import TangentialDrivingForce, RadialRestoringForce
 
-from src.hydrosync.simulation import Simulation
+from src.simulation import Simulation
 
 
 @click.command()
-@click.option("-x", "--x-particles", default=3, help="Number of particles in x-direction", type=int)
-@click.option("-y", "--y-particles", default=3, help="Number of particles in y-direction", type=int)
-@click.option("-a", "--array-type", default="grid", help="The arrangement of particle orbit centres", type=click.Choice(["grid", "honeycomb"]))
-@click.option("-t", "--tensor-type", default="oseen", help="Type of fluid dynamics tensor to use", type=click.Choice(["oseen"]))
-@click.option("-s", "--simulation-steps", default=1000, help="Number of simulation steps", type=int)
-@click.option("-k", "--spring-constant", default=0.001, help="Spring constant for radial restoring force", type=float)
-@click.option("-f", "--driving-force", default=5.5e-9, help="Magnitude of tangential driving force in Newtons", type=float)
-@click.option("-m", "--driving-force-modulation-strength", default=0.2, help="Amplitude of driving force modulation (0 to 1)", type=float)
+@click.option(
+    "-x",
+    "--x-particles",
+    default=3,
+    help="Number of particles in x-direction",
+    type=int,
+)
+@click.option(
+    "-y",
+    "--y-particles",
+    default=3,
+    help="Number of particles in y-direction",
+    type=int,
+)
+@click.option(
+    "-a",
+    "--array-type",
+    default="grid",
+    help="The arrangement of particle orbit centres",
+    type=click.Choice(["grid", "honeycomb"]),
+)
+@click.option(
+    "-t",
+    "--tensor-type",
+    default="oseen",
+    help="Type of fluid dynamics tensor to use",
+    type=click.Choice(["oseen"]),
+)
+@click.option(
+    "-s",
+    "--simulation-steps",
+    default=1000,
+    help="Number of simulation steps",
+    type=int,
+)
+@click.option(
+    "-k",
+    "--spring-constant",
+    default=0.001,
+    help="Spring constant for radial restoring force",
+    type=float,
+)
+@click.option(
+    "-f",
+    "--driving-force",
+    default=5.5e-9,
+    help="Magnitude of tangential driving force in Newtons",
+    type=float,
+)
+@click.option(
+    "-m",
+    "--driving-force-modulation-strength",
+    default=0.2,
+    help="Amplitude of driving force modulation (0 to 1)",
+    type=float,
+)
 def cli(
-    x_particles: int, y_particles: int, array_type: str, tensor_type: str, simulation_steps: int, spring_constant: float, driving_force: float, driving_force_modulation_strength: float
+    x_particles: int,
+    y_particles: int,
+    array_type: str,
+    tensor_type: str,
+    simulation_steps: int,
+    spring_constant: float,
+    driving_force: float,
+    driving_force_modulation_strength: float,
 ) -> None:
     constants_kwargs = {
         "simulation_steps": simulation_steps,

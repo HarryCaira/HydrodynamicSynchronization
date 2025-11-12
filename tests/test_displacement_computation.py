@@ -1,9 +1,16 @@
 import numpy as np
 
-from src.hydrosync.constants import GlobalConstants
+from src.constants import GlobalConstants
 
-from src.hydrosync.displacement_computation import HydrodynamicDisplacement, BrownianDisplacement, ParticleDisplacementInterface
-from src.hydrosync.fluid_dynamics_tensors import FluidDynamicsTensorInterface, OseenTensor
+from src.displacement_computation import (
+    HydrodynamicDisplacement,
+    BrownianDisplacement,
+    ParticleDisplacementInterface,
+)
+from src.fluid_dynamics_tensors import (
+    FluidDynamicsTensorInterface,
+    OseenTensor,
+)
 
 
 class MockDisplaceParticlesByOne(ParticleDisplacementInterface):
@@ -11,7 +18,12 @@ class MockDisplaceParticlesByOne(ParticleDisplacementInterface):
         return np.ones_like(positions)
 
     @classmethod
-    def create(cls, constants: GlobalConstants, fluid_dynamics_tensor: FluidDynamicsTensorInterface, external_forces: list) -> "MockDisplaceParticlesByOne":
+    def create(
+        cls,
+        constants: GlobalConstants,
+        fluid_dynamics_tensor: FluidDynamicsTensorInterface,
+        external_forces: list,
+    ) -> "MockDisplaceParticlesByOne":
         return cls()
 
 

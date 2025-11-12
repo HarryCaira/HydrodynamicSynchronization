@@ -2,7 +2,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from src.hydrosync.constants import GlobalConstants
+from src.constants import GlobalConstants
 
 
 class ParticleArray2DInterface(ABC):
@@ -22,7 +22,13 @@ class ParticleArray2DInterface(ABC):
 
     @classmethod
     @abstractmethod
-    def create(cls, nx: int, ny: int, constants: GlobalConstants, random_seed: Optional[int] = None) -> "ParticleArray2DInterface": ...
+    def create(
+        cls,
+        nx: int,
+        ny: int,
+        constants: GlobalConstants,
+        random_seed: Optional[int] = None,
+    ) -> "ParticleArray2DInterface": ...
 
 
 class GridArray(ParticleArray2DInterface):
@@ -49,7 +55,13 @@ class GridArray(ParticleArray2DInterface):
         return self._orbit_centers
 
     @classmethod
-    def create(cls, nx: int, ny: int, constants: GlobalConstants, random_start_seed: Optional[int] = None) -> "GridArray":
+    def create(
+        cls,
+        nx: int,
+        ny: int,
+        constants: GlobalConstants,
+        random_start_seed: Optional[int] = None,
+    ) -> "GridArray":
         orbit_centers = []
         positions = []
         phases = np.array([])
@@ -61,7 +73,13 @@ class GridArray(ParticleArray2DInterface):
 
         for i in range(nx):
             for j in range(ny):
-                orbit_center = np.array([i * constants.orbit_separation, j * constants.orbit_separation, 0.0])
+                orbit_center = np.array(
+                    [
+                        i * constants.orbit_separation,
+                        j * constants.orbit_separation,
+                        0.0,
+                    ]
+                )
                 orbit_centers.append(orbit_center)
                 phi = phases[i * ny + j]
 
@@ -102,7 +120,13 @@ class HoneycombArray(ParticleArray2DInterface):
         return self._orbit_centers
 
     @classmethod
-    def create(cls, nx: int, ny: int, constants: GlobalConstants, random_start_seed: Optional[int] = None) -> "HoneycombArray":
+    def create(
+        cls,
+        nx: int,
+        ny: int,
+        constants: GlobalConstants,
+        random_start_seed: Optional[int] = None,
+    ) -> "HoneycombArray":
         orbit_centers = []
         positions = []
         phases = np.array([])

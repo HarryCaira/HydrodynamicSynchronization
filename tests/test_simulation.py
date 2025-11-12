@@ -1,10 +1,12 @@
 import numpy as np
-from src.hydrosync.constants import GlobalConstants
-from src.hydrosync.arrays import GridArray
-from src.hydrosync.simulation import Simulation, SimulationLog
+from src.constants import GlobalConstants
+from src.arrays import GridArray
+from src.simulation import Simulation, SimulationLog
 
-from tests.test_hydrosync.test_fluid_dynamics_tensors import MockOnesTensor
-from tests.test_hydrosync.test_displacement_computation import MockDisplaceParticlesByOne
+from tests.test_fluid_dynamics_tensors import MockOnesTensor
+from tests.test_displacement_computation import (
+    MockDisplaceParticlesByOne,
+)
 
 
 class TestSimulationLog:

@@ -1,9 +1,9 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
-from src.hydrosync.constants import GlobalConstants
-from src.hydrosync.fluid_dynamics_tensors import FluidDynamicsTensorInterface
-from src.hydrosync.force_computation import ForceComputationInterface
+from src.constants import GlobalConstants
+from src.fluid_dynamics_tensors import FluidDynamicsTensorInterface
+from src.force_computation import ForceComputationInterface
 
 
 class ParticleDisplacementInterface(ABC):
