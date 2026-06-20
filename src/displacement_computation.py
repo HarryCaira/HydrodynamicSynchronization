@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from src.constants import GlobalConstants
 from src.fluid_dynamics_tensors import FluidDynamicsTensorInterface
 from src.force_computation import ForceComputationInterface
+from src.sampling import GaussianSampler, EighSampler
 
 
 class ParticleDisplacementInterface(ABC):
@@ -68,9 +69,10 @@ class HydrodynamicDisplacement(ParticleDisplacementInterface):
 class BrownianDisplacement(ParticleDisplacementInterface):
     """Computes displacement due to Brownian motion"""
 
-    def __init__(self, time_step: float, fluid_dynamics_tensor: FluidDynamicsTensorInterface):
+    def __init__(self, time_step: float, fluid_dynamics_tensor: FluidDynamicsTensorInterface, sampler: GaussianSampler):
         self._dt = time_step
         self._fluid_dynamics_tensor = fluid_dynamics_tensor
+        self._sampler = sampler
 
     def compute_displacements(self, positions: np.ndarray, orbit_centers: np.ndarray) -> np.ndarray:
         """
@@ -84,15 +86,9 @@ class BrownianDisplacement(ParticleDisplacementInterface):
         tensor = self._fluid_dynamics_tensor.compute_tensor(positions)
         cov = 2 * self._dt * tensor.transpose(0, 2, 1, 3).reshape(3 * n_particles, 3 * n_particles)
 
-        # Sample N(0, cov) via the symmetric eigendecomposition cov = Q diag(w) Q^T.
-        # Q diag(sqrt(w)) is a valid square-root factor, so x = Q (sqrt(w) * z) with
-        # z ~ N(0, I) has covariance cov. eigh is cheaper than the SVD that
-        # np.random.multivariate_normal uses by default, and clipping negative eigenvalues
-        # keeps it robust to a non-positive-definite Oseen covariance (nearest PSD sample).
-        eigenvalues, eigenvectors = np.linalg.eigh(cov)
-        sqrt_eigenvalues = np.sqrt(np.clip(eigenvalues, 0.0, None))
-        standard_normal = np.random.standard_normal(3 * n_particles)
-        sample = eigenvectors @ (sqrt_eigenvalues * standard_normal)
+        # Draw x ~ N(0, cov) = sqrt(cov) @ z; the sampler chooses how sqrt(cov) is applied
+        # (exact eigendecomposition vs matrix-free Chebyshev).
+        sample = self._sampler.sample(cov)
 
         displacements = sample.reshape(n_particles, 3).T
         return displacements
@@ -103,5 +99,6 @@ class BrownianDisplacement(ParticleDisplacementInterface):
         constants: GlobalConstants,
         fluid_dynamics_tensor: FluidDynamicsTensorInterface,
         external_forces: list[ForceComputationInterface] = [],
+        sampler: GaussianSampler | None = None,
     ) -> "BrownianDisplacement":
-        return cls(constants.time_step, fluid_dynamics_tensor)
+        return cls(constants.time_step, fluid_dynamics_tensor, sampler or EighSampler())
