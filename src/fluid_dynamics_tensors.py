@@ -23,42 +23,33 @@ class OseenTensor(FluidDynamicsTensorInterface):
         self._constants = constants
         self._prefactor = prefactor
 
-    def _self_mobility(self) -> np.ndarray:
-        """Calculate self-mobility tensor (diagonal elements)"""
-        mobility: float = self._prefactor / (6 * np.pi * self._constants.eta * self._constants.a)
-        return mobility * np.identity(3)
-
-    def _cross_mobility(self, r_ij: np.ndarray) -> np.ndarray:
-        """
-        Calculate cross-mobility tensor (off-diagonal elements)
-        Args:
-            r_ij: Vector between particles i and j
-        """
-        r: float = float(np.linalg.norm(r_ij))
-        if r < 2 * self._constants.a:  # Prevent overlap
-            r = 2 * self._constants.a
-
-        prefactor: float = self._prefactor / (8 * np.pi * self._constants.eta * r)
-        r_hat: np.ndarray = r_ij / r
-
-        return prefactor * (np.identity(3) + np.outer(r_hat, r_hat))
-
     def compute_tensor(self, positions: np.ndarray) -> np.ndarray:
         """
-        Compute the full Oseen tensor for all particle pairs
+        Compute the full Oseen tensor for all particle pairs (vectorised over pairs).
         Args:
             positions: Array of shape (3, n) containing particle positions
         Returns:
             Oseen tensor of shape (n, n, 3, 3)
         """
         n_particles = positions.shape[1]
-        tensor = np.zeros((n_particles, n_particles, 3, 3))
+        a = self._constants.a
 
-        for i in range(n_particles):
-            tensor[i, i] = self._self_mobility()
-            for j in range(i + 1, n_particles):
-                r_ij = positions[:, i] - positions[:, j]
-                tensor[i, j] = tensor[j, i] = self._cross_mobility(r_ij)
+        pos = positions.T  # (n, 3)
+        r_vec = pos[:, None, :] - pos[None, :, :]  # (n, n, 3): r_vec[i, j] = pos_i - pos_j
+        r = np.linalg.norm(r_vec, axis=2)  # (n, n)
+        r_clamped = np.where(r < 2 * a, 2 * a, r)  # prevent overlap (and div-by-zero on the diagonal)
+
+        r_hat = r_vec / r_clamped[:, :, None]  # (n, n, 3); zero on the diagonal
+        outer = r_hat[:, :, :, None] * r_hat[:, :, None, :]  # (n, n, 3, 3)
+
+        identity = np.identity(3)
+        cross_prefactor = self._prefactor / (8 * np.pi * self._constants.eta * r_clamped)  # (n, n)
+        tensor = cross_prefactor[:, :, None, None] * (identity + outer)
+
+        # Overwrite the diagonal with the self-mobility tensor.
+        self_mobility = self._prefactor / (6 * np.pi * self._constants.eta * a)
+        diagonal = np.arange(n_particles)
+        tensor[diagonal, diagonal] = self_mobility * identity
         return tensor
 
     @classmethod
@@ -81,46 +72,42 @@ class RotnePragerTensor(FluidDynamicsTensorInterface):
         self._constants = constants
         self._prefactor = prefactor
 
-    def _self_mobility(self) -> np.ndarray:
-        """Calculate self-mobility tensor (diagonal elements)"""
-        mobility: float = self._prefactor / (6 * np.pi * self._constants.eta * self._constants.a)
-        return mobility * np.identity(3)
-
-    def _cross_mobility(self, r_ij: np.ndarray) -> np.ndarray:
-        """
-        Calculate cross-mobility tensor (off-diagonal elements)
-        Args:
-            r_ij: Vector between particles i and j
-        """
-        a: float = self._constants.a
-        r: float = float(np.linalg.norm(r_ij))
-        r_hat: np.ndarray = r_ij / r if r > 0 else np.zeros(3)
-        outer: np.ndarray = np.outer(r_hat, r_hat)
-
-        if r >= 2 * a:
-            prefactor: float = self._prefactor / (8 * np.pi * self._constants.eta * r)
-            return prefactor * ((1 + 2 * a**2 / (3 * r**2)) * np.identity(3) + (1 - 2 * a**2 / r**2) * outer)
-
-        # Overlapping spheres: regularised Rotne-Prager-Yamakawa form
-        prefactor = self._prefactor / (6 * np.pi * self._constants.eta * a)
-        return prefactor * ((1 - 9 * r / (32 * a)) * np.identity(3) + (3 * r / (32 * a)) * outer)
-
     def compute_tensor(self, positions: np.ndarray) -> np.ndarray:
         """
-        Compute the full Rotne-Prager tensor for all particle pairs
+        Compute the full Rotne-Prager tensor for all particle pairs (vectorised over pairs).
         Args:
             positions: Array of shape (3, n) containing particle positions
         Returns:
             Rotne-Prager tensor of shape (n, n, 3, 3)
         """
         n_particles = positions.shape[1]
-        tensor = np.zeros((n_particles, n_particles, 3, 3))
+        a = self._constants.a
+        eta = self._constants.eta
 
-        for i in range(n_particles):
-            tensor[i, i] = self._self_mobility()
-            for j in range(i + 1, n_particles):
-                r_ij = positions[:, i] - positions[:, j]
-                tensor[i, j] = tensor[j, i] = self._cross_mobility(r_ij)
+        pos = positions.T  # (n, 3)
+        r_vec = pos[:, None, :] - pos[None, :, :]  # (n, n, 3)
+        r = np.linalg.norm(r_vec, axis=2)  # (n, n)
+        r_safe = np.where(r > 0, r, 1.0)  # avoid div-by-zero on the diagonal (overwritten below)
+
+        r_hat = r_vec / r_safe[:, :, None]  # (n, n, 3); zero on the diagonal
+        outer = r_hat[:, :, :, None] * r_hat[:, :, None, :]  # (n, n, 3, 3)
+        identity = np.identity(3)
+
+        # Far-field form (r >= 2a).
+        far_prefactor = self._prefactor / (8 * np.pi * eta * r_safe)
+        far = far_prefactor[:, :, None, None] * (
+            (1 + 2 * a**2 / (3 * r_safe**2))[:, :, None, None] * identity + (1 - 2 * a**2 / r_safe**2)[:, :, None, None] * outer
+        )
+
+        # Regularised overlapping form (r < 2a).
+        near_prefactor = self._prefactor / (6 * np.pi * eta * a)
+        near = near_prefactor * ((1 - 9 * r / (32 * a))[:, :, None, None] * identity + (3 * r / (32 * a))[:, :, None, None] * outer)
+
+        tensor = np.where((r >= 2 * a)[:, :, None, None], far, near)
+
+        # Overwrite the diagonal with the self-mobility tensor (the near form already yields this at r = 0).
+        diagonal = np.arange(n_particles)
+        tensor[diagonal, diagonal] = near_prefactor * identity
         return tensor
 
     @classmethod

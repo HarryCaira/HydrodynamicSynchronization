@@ -84,7 +84,17 @@ class BrownianDisplacement(ParticleDisplacementInterface):
         tensor = self._fluid_dynamics_tensor.compute_tensor(positions)
         cov = 2 * self._dt * tensor.transpose(0, 2, 1, 3).reshape(3 * n_particles, 3 * n_particles)
 
-        displacements = np.random.multivariate_normal(np.zeros(3 * n_particles), cov).reshape(n_particles, 3).T
+        # Sample N(0, cov) via the symmetric eigendecomposition cov = Q diag(w) Q^T.
+        # Q diag(sqrt(w)) is a valid square-root factor, so x = Q (sqrt(w) * z) with
+        # z ~ N(0, I) has covariance cov. eigh is cheaper than the SVD that
+        # np.random.multivariate_normal uses by default, and clipping negative eigenvalues
+        # keeps it robust to a non-positive-definite Oseen covariance (nearest PSD sample).
+        eigenvalues, eigenvectors = np.linalg.eigh(cov)
+        sqrt_eigenvalues = np.sqrt(np.clip(eigenvalues, 0.0, None))
+        standard_normal = np.random.standard_normal(3 * n_particles)
+        sample = eigenvectors @ (sqrt_eigenvalues * standard_normal)
+
+        displacements = sample.reshape(n_particles, 3).T
         return displacements
 
     @classmethod
