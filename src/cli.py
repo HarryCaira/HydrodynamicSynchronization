@@ -81,6 +81,13 @@ from src.simulation import Simulation
     help="Amplitude of driving force modulation (0 to 1)",
     type=float,
 )
+@click.option(
+    "-o",
+    "--output",
+    default="simulation_log.npz",
+    help="Path to save the simulation log as a .npz file",
+    type=click.Path(dir_okay=False, writable=True),
+)
 def cli(
     x_particles: int,
     y_particles: int,
@@ -91,6 +98,7 @@ def cli(
     spring_constant: float,
     driving_force: float,
     driving_force_modulation_strength: float,
+    output: str,
 ) -> None:
     constants_kwargs = {
         "simulation_steps": simulation_steps,
@@ -138,6 +146,9 @@ def cli(
     click.echo(f"- Simulation Steps: {simulation_steps}")
     click.echo(f"- Elapsed Time: {simulation_steps * constants.time_step:.2f} seconds")
     click.echo(f"- Final synchronization: {log.synchronization_history()[-1]:.3f}")
+
+    log.save(output)
+    click.echo(f"- Saved log to: {output}")
 
 
 if __name__ == "__main__":

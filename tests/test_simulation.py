@@ -27,6 +27,21 @@ class TestSimulationLog:
         assert len(history) == 2
         assert all(0 <= r <= 1 for r in history)
 
+    def test__save(self, tmp_path) -> None:
+        orbit_centers = np.array([[0.0, 1.0, 2.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+        log = SimulationLog(orbit_centers=orbit_centers, positions_history=[])
+        log.add_positions(orbit_centers + 1.0)
+        log.add_positions(orbit_centers + 2.0)
+
+        file_path = tmp_path / "run.npz"
+        log.save(str(file_path))
+
+        assert file_path.exists()
+        with np.load(file_path) as data:
+            np.testing.assert_array_equal(data["orbit_centers"], orbit_centers)
+            np.testing.assert_array_equal(data["positions_history"], np.stack(log.positions_history))
+            np.testing.assert_array_equal(data["synchronization_history"], np.array(log.synchronization_history()))
+
 
 class TestSimulation:
     def test__create(self) -> None:

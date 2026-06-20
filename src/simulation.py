@@ -29,6 +29,20 @@ class SimulationLog:
             strengths.append(r)
         return strengths
 
+    def save(self, file_path: str) -> None:
+        """Save the logged run to a compressed .npz file for later analysis.
+
+        Stores the orbit centres, the full position history stacked into a single
+        array of shape (steps, 3, n), and the synchronization history. Reload with
+        np.load(file_path), which exposes the arrays under these same keys.
+        """
+        np.savez(
+            file_path,
+            orbit_centers=self.orbit_centers,
+            positions_history=np.stack(self.positions_history),
+            synchronization_history=np.array(self.synchronization_history()),
+        )
+
 
 class SimulationInterface(ABC):
     @abstractmethod
