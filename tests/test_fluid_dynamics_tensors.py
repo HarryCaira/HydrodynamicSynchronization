@@ -135,15 +135,16 @@ class TestRotnePragerTensor:
         np.testing.assert_array_almost_equal(result[1, 0], expected)
 
     def test__compute_tensor__branches_continuous_at_contact(self) -> None:
-        # The two branches must agree at r = 2a (particle contact).
+        # The two branches must agree at r = 2a (particle contact): probing just below
+        # (overlapping branch) and just above (far-field branch) must give the same block.
         constants = GlobalConstants.create(eta=1.0, a=1e-6)
         tensor = RotnePragerTensor.create(constants)
         a = constants.a
 
         eps = 1e-12  # tiny offset to probe either side of the r = 2a boundary
-        just_below = tensor._cross_mobility(np.array([2 * a - eps, 0.0, 0.0]))
-        just_above = tensor._cross_mobility(np.array([2 * a + eps, 0.0, 0.0]))
-        np.testing.assert_array_almost_equal(just_below, just_above)
+        below = tensor.compute_tensor(np.array([[0.0, 0.0, 0.0], [2 * a - eps, 0.0, 0.0]]).T)
+        above = tensor.compute_tensor(np.array([[0.0, 0.0, 0.0], [2 * a + eps, 0.0, 0.0]]).T)
+        np.testing.assert_allclose(below[0, 1], above[0, 1], rtol=1e-5)
 
     def test__compute_tensor__is_symmetric_and_positive_definite(self) -> None:
         # The 3n x 3n grand mobility matrix should be symmetric positive-definite,

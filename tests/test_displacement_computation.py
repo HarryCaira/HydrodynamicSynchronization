@@ -10,6 +10,7 @@ from src.displacement_computation import (
 from src.fluid_dynamics_tensors import (
     FluidDynamicsTensorInterface,
     OseenTensor,
+    RotnePragerTensor,
 )
 
 
@@ -69,4 +70,21 @@ class TestBrownianDisplacement:
         displacements = brownian_displacement.compute_displacements(positions, positions)
 
         assert displacements.shape == positions.shape
-        # TODO: Further assertions to be made based on expected statistical properties of Brownian displacements
+
+    def test__compute_displacements__has_expected_covariance(self) -> None:
+        # The Brownian step must sample N(0, 2 dt D), so the empirical covariance of many
+        # draws should match the 3n x 3n diffusion-tensor covariance. Rotne-Prager is used
+        # because its covariance is positive-definite (no eigenvalue clipping in the sampler).
+        np.random.seed(0)
+        constants = GlobalConstants.create()
+        tensor = RotnePragerTensor.create(constants=constants)
+        brownian = BrownianDisplacement.create(constants, tensor, [])
+
+        positions = np.array([[0.0, 5e-6], [0.0, 0.0], [0.0, 0.0]])  # 2 particles, separation > 2a
+        n = positions.shape[1]
+        expected_cov = 2 * constants.time_step * tensor.compute_tensor(positions).transpose(0, 2, 1, 3).reshape(3 * n, 3 * n)
+
+        samples = np.array([brownian.compute_displacements(positions, positions).T.reshape(3 * n) for _ in range(30000)])
+        empirical_cov = np.cov(samples, rowvar=False)
+
+        np.testing.assert_allclose(empirical_cov, expected_cov, atol=0.1 * expected_cov.max())

@@ -16,7 +16,7 @@ step and shared, not twice:
   B  forces              tangential + radial, vectorised        (hydro only)
   C  contraction         the Python i,j loop tensor[i,j] @ F[j] (hydro only)
   D  covariance build    transpose/reshape to a 3n x 3n matrix  (brownian only)
-  E  multivariate_normal sampling from that covariance          (brownian only)
+  E  sampling            eigh-based draw from that covariance   (brownian only)
 
 so modelled per-step total = A + B + C + D + E.
 """
@@ -68,12 +68,16 @@ def profile_size(size: int, tensor_type: str, repeats: int) -> dict[str, float]:
             for j in range(n):
                 disp[:, i] += (dt * T[i, j] @ total_forces[:, j]) / kT
 
+    def sample() -> None:
+        # Matches BrownianDisplacement: sample N(0, cov) via the symmetric eigendecomposition.
+        eigenvalues, eigenvectors = np.linalg.eigh(cov)
+        eigenvectors @ (np.sqrt(np.clip(eigenvalues, 0.0, None)) * np.random.standard_normal(3 * n))
+
     a = _time(lambda: tensor.compute_tensor(positions), repeats)
     b = _time(lambda: sum(f.compute_forces(positions, centers) for f in forces), repeats)
     c = _time(contraction, repeats)
     d = _time(lambda: 2 * dt * T.transpose(0, 2, 1, 3).reshape(3 * n, 3 * n), repeats)
-    # check_valid='ignore': we only care about timing, not whether the cov is PD here.
-    e = _time(lambda: np.random.multivariate_normal(np.zeros(3 * n), cov, check_valid="ignore"), repeats)
+    e = _time(sample, repeats)
 
     return {"n": n, "tensor": a, "forces": b, "contraction": c, "cov": d, "sampling": e, "per_step": a + b + c + d + e}
 
