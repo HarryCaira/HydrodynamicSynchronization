@@ -12,6 +12,7 @@ from src.fluid_dynamics_tensors import (
     OseenTensor,
     RotnePragerTensor,
 )
+from src.force_computation import TangentialDrivingForce, RadialRestoringForce
 
 
 class MockDisplaceParticlesByOne(ParticleDisplacementInterface):
@@ -52,6 +53,31 @@ class TestHydrodynamicDisplacement:
         displacements = hydrodynamic_displacement.compute_displacements(positions, orbit_centers)
 
         assert displacements.shape == positions.shape
+
+    def test__compute_displacements__matches_explicit_loop(self) -> None:
+        # The vectorised (einsum) drift must equal the explicit double-loop contraction
+        # v_i = (dt / kT) * sum_j D_ij @ F_j.
+        constants = GlobalConstants.create()
+        tensor = OseenTensor.create(constants=constants)
+        forces = [TangentialDrivingForce.create(constants), RadialRestoringForce.create(constants)]
+        hydrodynamic_displacement = HydrodynamicDisplacement.create(constants, tensor, forces)
+
+        rng = np.random.default_rng(0)
+        positions = rng.uniform(-3e-6, 3e-6, size=(3, 5))
+        orbit_centers = rng.uniform(-3e-6, 3e-6, size=(3, 5))
+
+        result = hydrodynamic_displacement.compute_displacements(positions, orbit_centers)
+
+        # Reference: the explicit per-pair loop the einsum replaces.
+        grand_tensor = tensor.compute_tensor(positions)
+        total_forces = sum(f.compute_forces(positions, orbit_centers) for f in forces)
+        n = positions.shape[1]
+        expected = np.zeros_like(positions)
+        for i in range(n):
+            for j in range(n):
+                expected[:, i] += (constants.time_step * grand_tensor[i, j] @ total_forces[:, j]) / (constants.kB * constants.T)
+
+        np.testing.assert_allclose(result, expected)
 
 
 class TestBrownianDisplacement:

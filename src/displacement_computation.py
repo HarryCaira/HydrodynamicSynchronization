@@ -42,17 +42,17 @@ class HydrodynamicDisplacement(ParticleDisplacementInterface):
         Returns:
             Displacement vector (3, n)
         """
-        n_particles = positions.shape[1]
         tensor = self._fluid_dynamics_tensor.compute_tensor(positions)
 
         total_forces = np.zeros_like(positions)
         for force_computation in self._external_forces:
             total_forces += force_computation.compute_forces(positions, orbit_centers)
 
-        displacements = np.zeros_like(positions)
-        for i in range(n_particles):
-            for j in range(n_particles):
-                displacements[:, i] += (self._constants.time_step * tensor[i, j] @ total_forces[:, j]) / (self._constants.kB * self._constants.T)
+        # Deterministic drift v_i = (dt / kT) * sum_j D_ij @ F_j, contracting over the
+        # particle index j and the spatial index b. einsum runs the whole contraction in
+        # one compiled routine instead of an n^2 Python loop.
+        drift = np.einsum("ijab,bj->ai", tensor, total_forces)
+        displacements = (self._constants.time_step / (self._constants.kB * self._constants.T)) * drift
         return displacements
 
     @classmethod
