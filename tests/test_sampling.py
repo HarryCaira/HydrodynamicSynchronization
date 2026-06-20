@@ -66,7 +66,7 @@ class TestChebyshevMatrixSqrt:
 
 def _empirical_covariance(sampler, cov: np.ndarray, draws: int, seed: int) -> np.ndarray:
     np.random.seed(seed)
-    samples = np.array([sampler.sample(cov) for _ in range(draws)])
+    samples = np.array([sampler.compute_sample(cov) for _ in range(draws)])
     return np.cov(samples, rowvar=False)
 
 

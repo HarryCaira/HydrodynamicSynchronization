@@ -15,14 +15,21 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.polynomial import chebyshev as _chebyshev
 
+from src.constants import GlobalConstants
 
-class GaussianSampler(ABC):
+
+class GaussianSamplerInterface(ABC):
+    """Draws a single sample from N(0, covariance), returned as a 1-D array."""
+
     @abstractmethod
-    def sample(self, covariance: np.ndarray) -> np.ndarray:
-        """Return a single draw from N(0, covariance) as a 1-D array of length covariance.shape[0]."""
+    def compute_sample(self, covariance: np.ndarray) -> np.ndarray: ...
+
+    @classmethod
+    @abstractmethod
+    def create(cls, constants: GlobalConstants) -> "GaussianSamplerInterface": ...
 
 
-class EighSampler(GaussianSampler):
+class EighSampler(GaussianSamplerInterface):
     """
     Exact sampler. Factor Sigma = Q diag(w) Q^T with a symmetric eigendecomposition;
     Q diag(sqrt(w)) is a valid square-root factor, so x = Q (sqrt(w) * z) has covariance
@@ -30,10 +37,14 @@ class EighSampler(GaussianSampler):
     still yields the nearest PSD sample. Cost is O(m^3) for m = covariance.shape[0].
     """
 
-    def sample(self, covariance: np.ndarray) -> np.ndarray:
+    def compute_sample(self, covariance: np.ndarray) -> np.ndarray:
         eigenvalues, eigenvectors = np.linalg.eigh(covariance)
         sqrt_eigenvalues = np.sqrt(np.clip(eigenvalues, 0.0, None))
         return eigenvectors @ (sqrt_eigenvalues * np.random.standard_normal(covariance.shape[0]))
+
+    @classmethod
+    def create(cls, constants: GlobalConstants) -> "EighSampler":
+        return cls()
 
 
 def _power_iteration(matvec, dim: int, iterations: int, seed: int) -> float:
@@ -89,7 +100,7 @@ def _chebyshev_matrix_sqrt_apply(matrix: np.ndarray, z: np.ndarray, coefficients
     return coefficients[0] * z + mapped(b_kplus1) - b_kplus2
 
 
-class ChebyshevSampler(GaussianSampler):
+class ChebyshevSampler(GaussianSamplerInterface):
     """
     Fixman sampler. Approximate sqrt(Sigma) @ z with a Chebyshev polynomial in Sigma,
     evaluated via the Clenshaw recurrence using only matrix-vector products, so no
@@ -105,7 +116,7 @@ class ChebyshevSampler(GaussianSampler):
         self._degree = degree
         self._power_iterations = power_iterations
 
-    def sample(self, covariance: np.ndarray) -> np.ndarray:
+    def compute_sample(self, covariance: np.ndarray) -> np.ndarray:
         z = np.random.standard_normal(covariance.shape[0])
         lambda_min, lambda_max = _spectral_bounds(covariance, self._power_iterations)
 
@@ -118,3 +129,7 @@ class ChebyshevSampler(GaussianSampler):
 
         coefficients = _sqrt_chebyshev_coefficients(lower, upper, self._degree)
         return _chebyshev_matrix_sqrt_apply(covariance, z, coefficients, lower, upper)
+
+    @classmethod
+    def create(cls, constants: GlobalConstants) -> "ChebyshevSampler":
+        return cls()

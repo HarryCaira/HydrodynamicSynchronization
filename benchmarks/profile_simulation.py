@@ -53,7 +53,7 @@ def profile_size(size: int, tensor_type: str, repeats: int, noise_method: str) -
     constants = GlobalConstants.create()
     array = GridArray.create(nx=size, ny=size, constants=constants, random_start_seed=1)
     tensor = TENSORS[tensor_type].create(constants)
-    sampler = SAMPLERS[noise_method]()
+    sampler = SAMPLERS[noise_method].create(constants)
     forces = [TangentialDrivingForce.create(constants), RadialRestoringForce.create(constants)]
 
     positions = array.positions
@@ -73,7 +73,7 @@ def profile_size(size: int, tensor_type: str, repeats: int, noise_method: str) -
 
     def sample() -> None:
         # Matches BrownianDisplacement: draw N(0, cov) with the selected sampler.
-        sampler.sample(cov)
+        sampler.compute_sample(cov)
 
     a = _time(lambda: tensor.compute_tensor(positions), repeats)
     b = _time(lambda: sum(f.compute_forces(positions, centers) for f in forces), repeats)

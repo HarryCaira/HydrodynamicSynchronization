@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from src.constants import GlobalConstants
 from src.fluid_dynamics_tensors import FluidDynamicsTensorInterface
 from src.force_computation import ForceComputationInterface
-from src.sampling import GaussianSampler, EighSampler
+from src.sampling import GaussianSamplerInterface, EighSampler
 
 
 class ParticleDisplacementInterface(ABC):
@@ -69,7 +69,7 @@ class HydrodynamicDisplacement(ParticleDisplacementInterface):
 class BrownianDisplacement(ParticleDisplacementInterface):
     """Computes displacement due to Brownian motion"""
 
-    def __init__(self, time_step: float, fluid_dynamics_tensor: FluidDynamicsTensorInterface, sampler: GaussianSampler):
+    def __init__(self, time_step: float, fluid_dynamics_tensor: FluidDynamicsTensorInterface, sampler: GaussianSamplerInterface):
         self._dt = time_step
         self._fluid_dynamics_tensor = fluid_dynamics_tensor
         self._sampler = sampler
@@ -88,7 +88,7 @@ class BrownianDisplacement(ParticleDisplacementInterface):
 
         # Draw x ~ N(0, cov) = sqrt(cov) @ z; the sampler chooses how sqrt(cov) is applied
         # (exact eigendecomposition vs matrix-free Chebyshev).
-        sample = self._sampler.sample(cov)
+        sample = self._sampler.compute_sample(cov)
 
         displacements = sample.reshape(n_particles, 3).T
         return displacements
@@ -99,6 +99,6 @@ class BrownianDisplacement(ParticleDisplacementInterface):
         constants: GlobalConstants,
         fluid_dynamics_tensor: FluidDynamicsTensorInterface,
         external_forces: list[ForceComputationInterface] = [],
-        sampler: GaussianSampler | None = None,
+        sampler: GaussianSamplerInterface | None = None,
     ) -> "BrownianDisplacement":
         return cls(constants.time_step, fluid_dynamics_tensor, sampler or EighSampler())

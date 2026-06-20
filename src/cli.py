@@ -12,7 +12,7 @@ from src.displacement_computation import (
     BrownianDisplacement,
 )
 from src.force_computation import TangentialDrivingForce, RadialRestoringForce
-from src.sampling import GaussianSampler, EighSampler, ChebyshevSampler
+from src.sampling import GaussianSamplerInterface, EighSampler, ChebyshevSampler
 
 from src.simulation import Simulation
 
@@ -106,9 +106,9 @@ def cli(
         "grid": GridArray,
         "honeycomb": HoneycombArray,
     }
-    sampler_map: dict[str, GaussianSampler] = {
-        "eigh": EighSampler(),
-        "chebyshev": ChebyshevSampler(),
+    sampler_map: dict[str, type[GaussianSamplerInterface]] = {
+        "eigh": EighSampler,
+        "chebyshev": ChebyshevSampler,
     }
 
     constants = GlobalConstants.create(**constants_kwargs)
@@ -127,7 +127,7 @@ def cli(
                     RadialRestoringForce.create(constants=constants),
                 ],
             ),
-            BrownianDisplacement.create(constants=constants, fluid_dynamics_tensor=tensor, sampler=sampler_map[noise_method]),
+            BrownianDisplacement.create(constants=constants, fluid_dynamics_tensor=tensor, sampler=sampler_map[noise_method].create(constants)),
         ],
     )
 
