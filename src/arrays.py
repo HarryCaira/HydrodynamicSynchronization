@@ -27,7 +27,7 @@ class ParticleArray2DInterface(ABC):
         nx: int,
         ny: int,
         constants: GlobalConstants,
-        random_seed: Optional[int] = None,
+        random_start_seed: Optional[int] = None,
     ) -> "ParticleArray2DInterface": ...
 
 
@@ -67,7 +67,8 @@ class GridArray(ParticleArray2DInterface):
         phases = np.array([])
 
         if random_start_seed is not None:
-            phases = np.random.uniform(0, 2 * np.pi, size=nx * ny)
+            rng = np.random.default_rng(random_start_seed)
+            phases = rng.uniform(0, 2 * np.pi, size=nx * ny)
         else:
             phases = np.zeros(nx * ny)
 
@@ -132,7 +133,8 @@ class HoneycombArray(ParticleArray2DInterface):
         phases = np.array([])
 
         if random_start_seed is not None:
-            phases = np.random.uniform(0, 2 * np.pi, size=nx * ny)
+            rng = np.random.default_rng(random_start_seed)
+            phases = rng.uniform(0, 2 * np.pi, size=nx * ny)
         else:
             phases = np.zeros(nx * ny)
 
