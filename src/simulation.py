@@ -43,6 +43,18 @@ class SimulationLog:
             synchronization_history=np.array(self.synchronization_history()),
         )
 
+    @classmethod
+    def load(cls, file_path: str) -> "SimulationLog":
+        """Reload a run previously written by save() back into a SimulationLog.
+
+        The synchronization history is recomputed on demand from the positions, so
+        only the orbit centres and the position history need to be restored.
+        """
+        with np.load(file_path) as data:
+            orbit_centers = data["orbit_centers"]
+            positions_history = list(data["positions_history"])
+        return cls(orbit_centers=orbit_centers, positions_history=positions_history)
+
 
 class SimulationInterface(ABC):
     @abstractmethod
