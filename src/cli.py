@@ -4,6 +4,7 @@ from src.arrays import GridArray, HoneycombArray, ParticleArray2DInterface
 from src.fluid_dynamics_tensors import (
     OseenTensor,
     RotnePragerTensor,
+    CachedTensor,
     FluidDynamicsTensorInterface,
 )
 from src.displacement_computation import (
@@ -98,7 +99,7 @@ def cli(
     }
 
     constants = GlobalConstants.create(**constants_kwargs)
-    tensor = tensor_map[tensor_type].create(constants)
+    tensor = CachedTensor(tensor_map[tensor_type].create(constants))
     array = array_map[array_type].create(nx=x_particles, ny=y_particles, constants=constants, random_start_seed=1)
 
     simulation = Simulation.create(
