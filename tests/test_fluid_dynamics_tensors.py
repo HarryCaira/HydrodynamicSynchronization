@@ -1,6 +1,7 @@
 import numpy as np
+import pytest
 
-from src.fluid_dynamics_tensors import OseenTensor, RotnePragerTensor
+from src.fluid_dynamics_tensors import OseenTensor, RotnePragerTensor, CachedTensor
 from src.constants import GlobalConstants
 from src.fluid_dynamics_tensors import FluidDynamicsTensorInterface
 
@@ -13,6 +14,23 @@ class MockOnesTensor(FluidDynamicsTensorInterface):
 
     @classmethod
     def create(cls, constants: GlobalConstants) -> "MockOnesTensor":
+        return cls()
+
+
+class CountingTensor(FluidDynamicsTensorInterface):
+    """Counts compute_tensor calls and returns a distinct value each call,
+    so a stale cache (returning an old value) is detectable."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def compute_tensor(self, positions: np.ndarray) -> np.ndarray:
+        self.calls += 1
+        n_particles = positions.shape[1]
+        return np.full((n_particles, n_particles, 3, 3), float(self.calls))
+
+    @classmethod
+    def create(cls, constants: GlobalConstants) -> "CountingTensor":
         return cls()
 
 
@@ -141,3 +159,50 @@ class TestRotnePragerTensor:
         np.testing.assert_array_almost_equal(grand, grand.T)
         eigenvalues = np.linalg.eigvalsh(grand)
         assert np.all(eigenvalues > 0)
+
+
+class TestCachedTensor:
+    def test__delegates_to_wrapped_tensor(self) -> None:
+        positions = np.array([[0.0, 0.0, 0.0], [3e-6, 0.0, 0.0]]).T
+        inner = OseenTensor.create(GlobalConstants.create())
+        cached = CachedTensor(inner)
+
+        np.testing.assert_array_equal(cached.compute_tensor(positions), inner.compute_tensor(positions))
+
+    def test__same_positions_computes_once(self) -> None:
+        positions = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]).T
+        inner = CountingTensor()
+        cached = CachedTensor(inner)
+
+        first = cached.compute_tensor(positions)
+        second = cached.compute_tensor(positions)  # identical positions -> cache hit
+
+        assert inner.calls == 1
+        np.testing.assert_array_equal(first, second)  # cached value, not recomputed
+
+    def test__copied_positions_still_hit_cache(self) -> None:
+        # Cache validity is by value, so an equal-but-distinct array still hits.
+        positions = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]).T
+        inner = CountingTensor()
+        cached = CachedTensor(inner)
+
+        cached.compute_tensor(positions)
+        cached.compute_tensor(positions.copy())
+
+        assert inner.calls == 1
+
+    def test__changed_positions_recompute(self) -> None:
+        inner = CountingTensor()
+        cached = CachedTensor(inner)
+
+        positions = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]).T
+        cached.compute_tensor(positions)
+        moved = positions + 1.0  # new positions -> cache miss
+        result = cached.compute_tensor(moved)
+
+        assert inner.calls == 2
+        np.testing.assert_array_equal(result, np.full_like(result, 2.0))  # fresh value
+
+    def test__create_is_not_supported(self) -> None:
+        with pytest.raises(NotImplementedError):
+            CachedTensor.create(GlobalConstants.create())

@@ -126,3 +126,25 @@ class RotnePragerTensor(FluidDynamicsTensorInterface):
     @classmethod
     def create(cls, constants: GlobalConstants) -> "RotnePragerTensor":
         return cls(constants=constants, prefactor=constants.kB * constants.T)
+
+
+class CachedTensor(FluidDynamicsTensorInterface):
+    """
+    Memoising wrapper around another tensor.
+    """
+
+    def __init__(self, tensor: FluidDynamicsTensorInterface) -> None:
+        self._tensor = tensor
+        self._cached_positions: np.ndarray | None = None
+        self._cached_result: np.ndarray | None = None
+
+    def compute_tensor(self, positions: np.ndarray) -> np.ndarray:
+        """Return the wrapped tensor's result, reusing the previous one if positions are unchanged."""
+        if self._cached_result is None or not np.array_equal(positions, self._cached_positions):
+            self._cached_result = self._tensor.compute_tensor(positions)
+            self._cached_positions = positions.copy()
+        return self._cached_result
+
+    @classmethod
+    def create(cls, constants: GlobalConstants) -> "CachedTensor":
+        raise NotImplementedError("CachedTensor wraps an existing tensor instance; construct it directly as CachedTensor(tensor).")
