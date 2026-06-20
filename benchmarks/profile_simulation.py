@@ -29,7 +29,7 @@ import numpy as np
 from src.constants import GlobalConstants
 from src.arrays import GridArray
 from src.fluid_dynamics_tensors import OseenTensor, RotnePragerTensor
-from src.sampling import EighSampler, ChebyshevSampler
+from src.sampling import EighSample, ChebyshevSample
 from src.force_computation import TangentialDrivingForce, RadialRestoringForce
 
 TENSORS = {"oseen": OseenTensor, "rotne-prager": RotnePragerTensor}
@@ -45,7 +45,7 @@ def _time(fn, repeats: int) -> float:
     return best
 
 
-SAMPLERS = {"eigh": EighSampler, "chebyshev": ChebyshevSampler}
+SAMPLERS = {"eigh": EighSample, "chebyshev": ChebyshevSample}
 
 
 def profile_size(size: int, tensor_type: str, repeats: int, noise_method: str) -> dict[str, float]:
@@ -53,7 +53,7 @@ def profile_size(size: int, tensor_type: str, repeats: int, noise_method: str) -
     constants = GlobalConstants.create()
     array = GridArray.create(nx=size, ny=size, constants=constants, random_start_seed=1)
     tensor = TENSORS[tensor_type].create(constants)
-    sampler = SAMPLERS[noise_method].create(constants)
+    sampler = SAMPLERS[noise_method]()
     forces = [TangentialDrivingForce.create(constants), RadialRestoringForce.create(constants)]
 
     positions = array.positions

@@ -1,8 +1,8 @@
 import numpy as np
 
 from src.sampling import (
-    EighSampler,
-    ChebyshevSampler,
+    EighSample,
+    ChebyshevSample,
     _spectral_bounds,
     _sqrt_chebyshev_coefficients,
     _chebyshev_matrix_sqrt_apply,
@@ -70,22 +70,22 @@ def _empirical_covariance(sampler, cov: np.ndarray, draws: int, seed: int) -> np
     return np.cov(samples, rowvar=False)
 
 
-class TestEighSampler:
+class TestEighSample:
     def test__reproduces_covariance(self) -> None:
         cov = _random_spd(6, seed=5)
-        empirical = _empirical_covariance(EighSampler(), cov, draws=20000, seed=0)
+        empirical = _empirical_covariance(EighSample(), cov, draws=20000, seed=0)
         np.testing.assert_allclose(empirical, cov, atol=0.15 * cov.max())
 
 
-class TestChebyshevSampler:
+class TestChebyshevSample:
     def test__reproduces_covariance(self) -> None:
         cov = _random_spd(6, seed=6)
-        empirical = _empirical_covariance(ChebyshevSampler(degree=40), cov, draws=20000, seed=0)
+        empirical = _empirical_covariance(ChebyshevSample(degree=40), cov, draws=20000, seed=0)
         np.testing.assert_allclose(empirical, cov, atol=0.15 * cov.max())
 
     def test__matches_eigh_distribution(self) -> None:
         # The two samplers should produce the same covariance (different factors, same N(0, cov)).
         cov = _random_spd(6, seed=7)
-        eigh_cov = _empirical_covariance(EighSampler(), cov, draws=20000, seed=1)
-        cheb_cov = _empirical_covariance(ChebyshevSampler(degree=40), cov, draws=20000, seed=1)
+        eigh_cov = _empirical_covariance(EighSample(), cov, draws=20000, seed=1)
+        cheb_cov = _empirical_covariance(ChebyshevSample(degree=40), cov, draws=20000, seed=1)
         np.testing.assert_allclose(cheb_cov, eigh_cov, atol=0.15 * cov.max())

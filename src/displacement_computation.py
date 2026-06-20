@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from src.constants import GlobalConstants
 from src.fluid_dynamics_tensors import FluidDynamicsTensorInterface
 from src.force_computation import ForceComputationInterface
-from src.sampling import GaussianSamplerInterface, EighSampler
+from src.sampling import GaussianSampleInterface, EighSample
 
 
 class ParticleDisplacementInterface(ABC):
@@ -69,7 +69,7 @@ class HydrodynamicDisplacement(ParticleDisplacementInterface):
 class BrownianDisplacement(ParticleDisplacementInterface):
     """Computes displacement due to Brownian motion"""
 
-    def __init__(self, time_step: float, fluid_dynamics_tensor: FluidDynamicsTensorInterface, sampler: GaussianSamplerInterface):
+    def __init__(self, time_step: float, fluid_dynamics_tensor: FluidDynamicsTensorInterface, sampler: GaussianSampleInterface):
         self._dt = time_step
         self._fluid_dynamics_tensor = fluid_dynamics_tensor
         self._sampler = sampler
@@ -99,6 +99,6 @@ class BrownianDisplacement(ParticleDisplacementInterface):
         constants: GlobalConstants,
         fluid_dynamics_tensor: FluidDynamicsTensorInterface,
         external_forces: list[ForceComputationInterface] = [],
-        sampler: GaussianSamplerInterface | None = None,
+        sampler: GaussianSampleInterface | None = None,
     ) -> "BrownianDisplacement":
-        return cls(constants.time_step, fluid_dynamics_tensor, sampler or EighSampler())
+        return cls(constants.time_step, fluid_dynamics_tensor, sampler or EighSample())

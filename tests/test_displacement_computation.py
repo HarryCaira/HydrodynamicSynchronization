@@ -13,7 +13,7 @@ from src.fluid_dynamics_tensors import (
     RotnePragerTensor,
 )
 from src.force_computation import TangentialDrivingForce, RadialRestoringForce
-from src.sampling import ChebyshevSampler
+from src.sampling import ChebyshevSample
 
 
 class MockDisplaceParticlesByOne(ParticleDisplacementInterface):
@@ -121,7 +121,7 @@ class TestBrownianDisplacement:
         # produce a finite, correctly shaped displacement.
         constants = GlobalConstants.create()
         tensor = RotnePragerTensor.create(constants=constants)
-        brownian = BrownianDisplacement.create(constants, tensor, [], sampler=ChebyshevSampler(degree=40))
+        brownian = BrownianDisplacement.create(constants, tensor, [], sampler=ChebyshevSample(degree=40))
 
         positions = np.array([[0.0, 5e-6], [0.0, 0.0], [0.0, 0.0]])
         displacements = brownian.compute_displacements(positions, positions)

@@ -1,11 +1,11 @@
-"""Samplers that draw a single correlated Gaussian displacement N(0, covariance).
+"""Strategies that draw a single correlated Gaussian sample N(0, covariance).
 
 The Brownian step needs x = sqrt(Sigma) @ z with z ~ N(0, I), where Sigma = 2 dt D is
 the 3n x 3n diffusion-tensor covariance. Two strategies are provided:
 
-- EighSampler: factor Sigma exactly with a symmetric eigendecomposition. Robust and
+- EighSample: factor Sigma exactly with a symmetric eigendecomposition. Robust and
   simple, but O((3n)^3) per step - the dominant cost at large n.
-- ChebyshevSampler: the Fixman method. Approximate sqrt(Sigma) @ z with a Chebyshev
+- ChebyshevSample: the Fixman method. Approximate sqrt(Sigma) @ z with a Chebyshev
   polynomial in Sigma, evaluated via the Clenshaw recurrence using only matrix-vector
   products. Cost is O(degree * (3n)^2), which wins once 3n is large.
 """
@@ -15,21 +15,15 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.polynomial import chebyshev as _chebyshev
 
-from src.constants import GlobalConstants
 
-
-class GaussianSamplerInterface(ABC):
+class GaussianSampleInterface(ABC):
     """Draws a single sample from N(0, covariance), returned as a 1-D array."""
 
     @abstractmethod
     def compute_sample(self, covariance: np.ndarray) -> np.ndarray: ...
 
-    @classmethod
-    @abstractmethod
-    def create(cls, constants: GlobalConstants) -> "GaussianSamplerInterface": ...
 
-
-class EighSampler(GaussianSamplerInterface):
+class EighSample(GaussianSampleInterface):
     """
     Exact sampler. Factor Sigma = Q diag(w) Q^T with a symmetric eigendecomposition;
     Q diag(sqrt(w)) is a valid square-root factor, so x = Q (sqrt(w) * z) has covariance
@@ -41,10 +35,6 @@ class EighSampler(GaussianSamplerInterface):
         eigenvalues, eigenvectors = np.linalg.eigh(covariance)
         sqrt_eigenvalues = np.sqrt(np.clip(eigenvalues, 0.0, None))
         return eigenvectors @ (sqrt_eigenvalues * np.random.standard_normal(covariance.shape[0]))
-
-    @classmethod
-    def create(cls, constants: GlobalConstants) -> "EighSampler":
-        return cls()
 
 
 def _power_iteration(matvec, dim: int, iterations: int, seed: int) -> float:
@@ -100,7 +90,7 @@ def _chebyshev_matrix_sqrt_apply(matrix: np.ndarray, z: np.ndarray, coefficients
     return coefficients[0] * z + mapped(b_kplus1) - b_kplus2
 
 
-class ChebyshevSampler(GaussianSamplerInterface):
+class ChebyshevSample(GaussianSampleInterface):
     """
     Fixman sampler. Approximate sqrt(Sigma) @ z with a Chebyshev polynomial in Sigma,
     evaluated via the Clenshaw recurrence using only matrix-vector products, so no
@@ -129,7 +119,3 @@ class ChebyshevSampler(GaussianSamplerInterface):
 
         coefficients = _sqrt_chebyshev_coefficients(lower, upper, self._degree)
         return _chebyshev_matrix_sqrt_apply(covariance, z, coefficients, lower, upper)
-
-    @classmethod
-    def create(cls, constants: GlobalConstants) -> "ChebyshevSampler":
-        return cls()
