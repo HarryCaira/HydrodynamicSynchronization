@@ -3,6 +3,7 @@ from src.constants import GlobalConstants
 from src.arrays import GridArray, HoneycombArray, ParticleArray2DInterface
 from src.fluid_dynamics_tensors import (
     OseenTensor,
+    RotnePragerTensor,
     FluidDynamicsTensorInterface,
 )
 from src.displacement_computation import (
@@ -41,7 +42,7 @@ from src.simulation import Simulation
     "--tensor-type",
     default="oseen",
     help="Type of fluid dynamics tensor to use",
-    type=click.Choice(["oseen"]),
+    type=click.Choice(["oseen", "rotne-prager"]),
 )
 @click.option(
     "-s",
@@ -89,6 +90,7 @@ def cli(
     }
     tensor_map: dict[str, type[FluidDynamicsTensorInterface]] = {
         "oseen": OseenTensor,
+        "rotne-prager": RotnePragerTensor,
     }
     array_map: dict[str, type[ParticleArray2DInterface]] = {
         "grid": GridArray,
