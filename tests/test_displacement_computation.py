@@ -13,6 +13,7 @@ from src.fluid_dynamics_tensors import (
     RotnePragerTensor,
 )
 from src.force_computation import TangentialDrivingForce, RadialRestoringForce
+from src.sampling import ChebyshevSample
 
 
 class MockDisplaceParticlesByOne(ParticleDisplacementInterface):
@@ -114,3 +115,16 @@ class TestBrownianDisplacement:
         empirical_cov = np.cov(samples, rowvar=False)
 
         np.testing.assert_allclose(empirical_cov, expected_cov, atol=0.1 * expected_cov.max())
+
+    def test__compute_displacements__with_chebyshev_sampler(self) -> None:
+        # The Chebyshev (Fixman) sampler should integrate through BrownianDisplacement and
+        # produce a finite, correctly shaped displacement.
+        constants = GlobalConstants.create()
+        tensor = RotnePragerTensor.create(constants=constants)
+        brownian = BrownianDisplacement.create(constants, tensor, [], sampler=ChebyshevSample(degree=40))
+
+        positions = np.array([[0.0, 5e-6], [0.0, 0.0], [0.0, 0.0]])
+        displacements = brownian.compute_displacements(positions, positions)
+
+        assert displacements.shape == positions.shape
+        assert np.all(np.isfinite(displacements))

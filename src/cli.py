@@ -12,6 +12,7 @@ from src.displacement_computation import (
     BrownianDisplacement,
 )
 from src.force_computation import TangentialDrivingForce, RadialRestoringForce
+from src.sampling import GaussianSampleInterface, EighSample, ChebyshevSample
 
 from src.simulation import Simulation
 
@@ -46,6 +47,13 @@ from src.simulation import Simulation
     type=click.Choice(["oseen", "rotne-prager"]),
 )
 @click.option(
+    "-n",
+    "--noise-method",
+    default="eigh",
+    help="Brownian noise sampler: 'eigh' (exact) or 'chebyshev' (matrix-free, faster at large n)",
+    type=click.Choice(["eigh", "chebyshev"]),
+)
+@click.option(
     "-s",
     "--simulation-steps",
     default=1000,
@@ -78,6 +86,7 @@ def cli(
     y_particles: int,
     array_type: str,
     tensor_type: str,
+    noise_method: str,
     simulation_steps: int,
     spring_constant: float,
     driving_force: float,
@@ -97,6 +106,10 @@ def cli(
         "grid": GridArray,
         "honeycomb": HoneycombArray,
     }
+    sampler_map: dict[str, type[GaussianSampleInterface]] = {
+        "eigh": EighSample,
+        "chebyshev": ChebyshevSample,
+    }
 
     constants = GlobalConstants.create(**constants_kwargs)
     tensor = CachedTensor(tensor_map[tensor_type].create(constants))
@@ -114,7 +127,7 @@ def cli(
                     RadialRestoringForce.create(constants=constants),
                 ],
             ),
-            BrownianDisplacement.create(constants=constants, fluid_dynamics_tensor=tensor),
+            BrownianDisplacement.create(constants=constants, fluid_dynamics_tensor=tensor, sampler=sampler_map[noise_method]()),
         ],
     )
 

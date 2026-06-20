@@ -16,7 +16,7 @@ step and shared, not twice:
   B  forces              tangential + radial, vectorised        (hydro only)
   C  contraction         einsum drift sum_j tensor[i,j] @ F[j]  (hydro only)
   D  covariance build    transpose/reshape to a 3n x 3n matrix  (brownian only)
-  E  sampling            eigh-based draw from that covariance   (brownian only)
+  E  sampling            draw from that covariance (eigh/chebyshev)  (brownian only)
 
 so modelled per-step total = A + B + C + D + E.
 """
@@ -29,6 +29,7 @@ import numpy as np
 from src.constants import GlobalConstants
 from src.arrays import GridArray
 from src.fluid_dynamics_tensors import OseenTensor, RotnePragerTensor
+from src.sampling import EighSample, ChebyshevSample
 from src.force_computation import TangentialDrivingForce, RadialRestoringForce
 
 TENSORS = {"oseen": OseenTensor, "rotne-prager": RotnePragerTensor}
@@ -44,11 +45,15 @@ def _time(fn, repeats: int) -> float:
     return best
 
 
-def profile_size(size: int, tensor_type: str, repeats: int) -> dict[str, float]:
+SAMPLERS = {"eigh": EighSample, "chebyshev": ChebyshevSample}
+
+
+def profile_size(size: int, tensor_type: str, repeats: int, noise_method: str) -> dict[str, float]:
     """Time each per-step component once, on a representative configuration."""
     constants = GlobalConstants.create()
     array = GridArray.create(nx=size, ny=size, constants=constants, random_start_seed=1)
     tensor = TENSORS[tensor_type].create(constants)
+    sampler = SAMPLERS[noise_method]()
     forces = [TangentialDrivingForce.create(constants), RadialRestoringForce.create(constants)]
 
     positions = array.positions
@@ -67,9 +72,8 @@ def profile_size(size: int, tensor_type: str, repeats: int) -> dict[str, float]:
         (dt / kT) * np.einsum("ijab,bj->ai", T, total_forces)
 
     def sample() -> None:
-        # Matches BrownianDisplacement: sample N(0, cov) via the symmetric eigendecomposition.
-        eigenvalues, eigenvectors = np.linalg.eigh(cov)
-        eigenvectors @ (np.sqrt(np.clip(eigenvalues, 0.0, None)) * np.random.standard_normal(3 * n))
+        # Matches BrownianDisplacement: draw N(0, cov) with the selected sampler.
+        sampler.compute_sample(cov)
 
     a = _time(lambda: tensor.compute_tensor(positions), repeats)
     b = _time(lambda: sum(f.compute_forces(positions, centers) for f in forces), repeats)
@@ -88,15 +92,16 @@ def _fit_exponent(ns: list[int], times: list[float]) -> float:
 
 @click.command()
 @click.option("-t", "--tensor-type", default="oseen", type=click.Choice(list(TENSORS)), help="Tensor implementation to profile")
+@click.option("-n", "--noise-method", default="eigh", type=click.Choice(list(SAMPLERS)), help="Brownian noise sampler to profile")
 @click.option("--max-size", default=10, type=int, help="Largest square grid side length to test (sweep is 2..max-size)")
 @click.option("-r", "--repeats", default=5, type=int, help="Best-of-N timing repeats per measurement")
-def main(tensor_type: str, max_size: int, repeats: int) -> None:
+def main(tensor_type: str, noise_method: str, max_size: int, repeats: int) -> None:
     sizes = list(range(2, max_size + 1))
-    rows = [profile_size(s, tensor_type, repeats) for s in sizes]
+    rows = [profile_size(s, tensor_type, repeats, noise_method) for s in sizes]
 
     components = ["tensor", "forces", "contraction", "cov", "sampling"]
     header = f"{'n':>5} | " + " | ".join(f"{c:>11}" for c in components) + f" | {'per-step':>11} | {'%tensor':>8}"
-    print(f"\nPer-component time per step (ms)  -  tensor='{tensor_type}', best-of-{repeats}\n")
+    print(f"\nPer-component time per step (ms)  -  tensor='{tensor_type}', noise='{noise_method}', best-of-{repeats}\n")
     print(header)
     print("-" * len(header))
     for r in rows:
