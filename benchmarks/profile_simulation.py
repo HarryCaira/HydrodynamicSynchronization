@@ -14,7 +14,7 @@ query the tensor, but the simulation wraps it in a CachedTensor so it is built o
 step and shared, not twice:
   A  compute_tensor      built once per step (shared via CachedTensor)
   B  forces              tangential + radial, vectorised        (hydro only)
-  C  contraction         the Python i,j loop tensor[i,j] @ F[j] (hydro only)
+  C  contraction         einsum drift sum_j tensor[i,j] @ F[j]  (hydro only)
   D  covariance build    transpose/reshape to a 3n x 3n matrix  (brownian only)
   E  sampling            eigh-based draw from that covariance   (brownian only)
 
@@ -62,11 +62,9 @@ def profile_size(size: int, tensor_type: str, repeats: int) -> dict[str, float]:
     cov = 2 * dt * T.transpose(0, 2, 1, 3).reshape(3 * n, 3 * n)
 
     def contraction() -> None:
+        # Matches HydrodynamicDisplacement: drift = (dt / kT) * sum_j D_ij @ F_j via einsum.
         total_forces = sum(f.compute_forces(positions, centers) for f in forces)
-        disp = np.zeros_like(positions)
-        for i in range(n):
-            for j in range(n):
-                disp[:, i] += (dt * T[i, j] @ total_forces[:, j]) / kT
+        (dt / kT) * np.einsum("ijab,bj->ai", T, total_forces)
 
     def sample() -> None:
         # Matches BrownianDisplacement: sample N(0, cov) via the symmetric eigendecomposition.
