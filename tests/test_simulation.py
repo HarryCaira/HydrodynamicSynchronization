@@ -42,6 +42,21 @@ class TestSimulationLog:
             np.testing.assert_array_equal(data["positions_history"], np.stack(log.positions_history))
             np.testing.assert_array_equal(data["synchronization_history"], np.array(log.synchronization_history()))
 
+    def test__save_then_load_round_trips(self, tmp_path) -> None:
+        orbit_centers = np.array([[0.0, 1.0, 2.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+        log = SimulationLog(orbit_centers=orbit_centers, positions_history=[])
+        log.add_positions(orbit_centers + 1.0)
+        log.add_positions(orbit_centers + 2.0)
+
+        file_path = tmp_path / "run.npz"
+        log.save(str(file_path))
+        reloaded = SimulationLog.load(str(file_path))
+
+        np.testing.assert_array_equal(reloaded.orbit_centers, log.orbit_centers)
+        assert len(reloaded.positions_history) == len(log.positions_history)
+        for restored, original in zip(reloaded.positions_history, log.positions_history):
+            np.testing.assert_array_equal(restored, original)
+
 
 class TestSimulation:
     def test__create(self) -> None:
